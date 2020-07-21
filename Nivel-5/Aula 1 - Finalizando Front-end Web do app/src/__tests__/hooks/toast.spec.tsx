@@ -1,120 +1,82 @@
-import React from 'react';
 import { renderHook, act } from '@testing-library/react-hooks';
-import { render, getByText } from '@testing-library/react';
+import { wait, waitFor } from '@testing-library/react';
 import { useToast, ToastProvider } from 'src/hooks/toast';
-import MockAdapter from 'axios-mock-adapter';
-import api from 'src/services/api';
-import ToastContainer from 'src/components/ToastContainer';
-import { string } from 'yup';
+import { uuid } from 'uuidv4';
 
-const apiMock = new MockAdapter(api);
+const uuidSpy = {
+  uuid,
+};
 
 describe('Toast Hook', () => {
-  it('Should be able to show a toast message', async () => {
-    const { result, waitForNextUpdate } = renderHook(() => useToast(), {
+  it('Should be able to use hook', () => {
+    const { result } = renderHook(() => useToast(), {
       wrapper: ToastProvider,
     });
 
-    result.current.addToast({
-      type: 'success',
-      title: 'add-toast-test-title',
-      description: 'add-toast-test-description',
-    });
-
-    await waitForNextUpdate();
-
-    // const { getByText } = render(
-    //   <ToastContainer
-    //     messages={[
-    //       {
-    //         id: 'toast-test-id-01',
-    //         type: 'success',
-    //         title: 'add-toast-test-title',
-    //         description: 'add-toast-test-description',
-    //       },
-    //     ]}
-    //   />,
-    // );
-
-    expect(getByText(strongElement, 'add-toast-test-title')).toBeTruthy();
+    expect(typeof result.current.addToast).toBe('function');
+    expect(typeof result.current.removeToast).toBe('function');
   });
 
-  // it('Should restore saved data from storage when auth inits', () => {
-  //   jest.spyOn(Storage.prototype, 'getItem').mockImplementation((key) => {
-  //     switch (key) {
-  //       case '@GoBarber:token':
-  //         return 'token-123';
-  //       case '@GoBarber:user':
-  //         return JSON.stringify({
-  //           id: 'user-123',
-  //           name: 'John Doe',
-  //           email: 'johndoe@example.com.br',
-  //         });
-  //       default:
-  //         return null;
-  //     }
-  //   });
+  it('Should be able to add toast message', async () => {
+    const { result } = renderHook(() => useToast(), {
+      wrapper: ToastProvider,
+    });
 
-  //   const { result } = renderHook(() => useAuth(), {
-  //     wrapper: AuthProvider,
-  //   });
+    const mockAddToast = jest.spyOn(result.current, 'addToast');
 
-  //   expect(result.current.user.email).toEqual('johndoe@example.com.br');
-  // });
+    act(() => {
+      result.current.addToast({
+        type: 'success',
+        title: 'add-toast-test-title',
+        description: 'add-toast-test-description',
+      });
+    });
 
-  // it('Should be able to sign out', async () => {
-  //   jest.spyOn(Storage.prototype, 'getItem').mockImplementation((key) => {
-  //     switch (key) {
-  //       case '@GoBarber:token':
-  //         return 'token-123';
-  //       case '@GoBarber:user':
-  //         return JSON.stringify({
-  //           id: 'user-123',
-  //           name: 'John Doe',
-  //           email: 'johndoe@example.com.br',
-  //         });
-  //       default:
-  //         return null;
-  //     }
-  //   });
+    expect(mockAddToast).toHaveBeenCalledTimes(1);
+    expect(result.error).toBeUndefined();
+  });
 
-  //   const removeItemSpy = jest.spyOn(Storage.prototype, 'removeItem');
+  it('should be able to remove toast manually', () => {
+    const { result } = renderHook(() => useToast(), {
+      wrapper: ToastProvider,
+    });
 
-  //   const { result } = renderHook(() => useAuth(), {
-  //     wrapper: AuthProvider,
-  //   });
+    jest.spyOn(uuidSpy, 'uuid').mockImplementation(() => '1');
 
-  //   act(() => {
-  //     result.current.signOut();
-  //   });
+    const mockRemoveToast = jest
+      .spyOn(result.current, 'removeToast')
+      .mockImplementation(() => '1');
 
-  //   expect(removeItemSpy).toHaveBeenCalledTimes(2);
-  //   expect(result.current.user).toBeUndefined();
-  // });
+    act(() => {
+      result.current.addToast({
+        title: 'Toast Test',
+      });
 
-  // it('Should be able to update user data', () => {
-  //   const setItemSpy = jest.spyOn(Storage.prototype, 'setItem');
+      result.current.removeToast('1');
+    });
 
-  //   const { result } = renderHook(() => useAuth(), {
-  //     wrapper: AuthProvider,
-  //   });
+    expect(mockRemoveToast).toHaveBeenCalledTimes(1);
+    expect(result.error).toBeUndefined();
+  });
 
-  //   const user = {
-  //     id: 'user-123',
-  //     name: 'John Doe',
-  //     email: 'johndoe@example.com.br',
-  //     avatar_url: 'image-test.jpg',
-  //   };
+  it('should be able to remove toast automatically', async () => {
+    const { result } = renderHook(() => useToast(), {
+      wrapper: ToastProvider,
+    });
 
-  //   act(() => {
-  //     result.current.updateUser(user);
-  //   });
+    jest.spyOn(uuidSpy, 'uuid').mockImplementation(() => '1');
 
-  //   expect(setItemSpy).toHaveBeenCalledWith(
-  //     '@GoBarber:user',
-  //     JSON.stringify(user),
-  //   );
+    const mockRemoveToast = jest.spyOn(result.current, 'removeToast');
+    const mockSetTimeout = jest.spyOn(window, 'setTimeout');
 
-  //   expect(result.current.user).toEqual(user);
-  // });
+    act(() => {
+      result.current.addToast({
+        title: 'Toast Test',
+      });
+    });
+
+    // await wait(() => {
+    //   expect(mockSetTimeout).toHaveBeenCalledWith(mockRemoveToast);
+    // });
+  });
 });
